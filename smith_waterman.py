@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import sys
 
-from alignment import Alignment
+from alignment import Alignment, Alignments
 
 def compute_scoring_matrix(seq1, seq2, match_score, mismatch_score, gap_penalty):
     n = len(seq1) + 1
@@ -89,6 +89,18 @@ def printable_matrix(matrix, seq1, seq2):
     
     return str(df) + '\n\n'
 
+def find_alignments_by_score(scoring_matrix, seq1, seq2):
+    alignments = Alignments()
+    n, m = scoring_matrix.shape
+
+    for i in range(1, n):
+        for j in range(1, m):
+            score = scoring_matrix[i, j]
+            if score > 0:
+                alignments.append(traceback_process(scoring_matrix, seq1, seq2, (i, j)))
+    
+    return alignments
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Implementation of the Smith and Waterman algorithm for local sequence alignment by Daniele Isoni',
@@ -100,6 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('--mismatch-score', type=float, help='The score for a sequence mismatch, it is set to negative MATCH_SCORE if not provided')
     parser.add_argument('--gap-penalty', type=float, default=-2.0, help='The penalty for a sequence gap')
     parser.add_argument('--output-file', '-o', type=str, help='Specify file to save the output')
+    parser.add_argument('--improvement', action='store_true', help='Prints all alignments with length > 5, score > 4 and gaps > 0')
 
     args = parser.parse_args()
 
@@ -109,6 +122,7 @@ if __name__ == '__main__':
     mismatch_score = args.mismatch_score or -match_score
     gap_penalty = args.gap_penalty
     output_file = args.output_file
+    improvement = args.improvement
 
     scoring_matrix = compute_scoring_matrix(seq1, seq2, match_score, mismatch_score, gap_penalty)
     
@@ -131,12 +145,24 @@ if __name__ == '__main__':
 
     print(matrix_to_print)
 
-    out_string = f'''seq1: {seq1}
+    if improvement:
+        alignments = find_alignments_by_score(scoring_matrix, seq1, seq2)
+
+        filtered_alignments = alignments.filter(length__gt=5, score__gt=4, min_gap__gt=0)
+    
+        filtered_alignments.sort(key='score', reverse=True)
+
+        for al in filtered_alignments:
+            if output_file:
+                f.write(al.to_string(to_file=True) + '\n')
+            print(al)
+    else:
+        out_string = f'''seq1: {seq1}
 seq2: {seq2}
 {best_alignement}
 '''
-    if output_file:
-        f.write(out_string)
-    print(out_string)
+        if output_file:
+            f.write(out_string)
+        print(out_string)
         
 

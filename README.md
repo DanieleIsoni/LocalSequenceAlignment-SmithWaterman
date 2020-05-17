@@ -12,7 +12,7 @@ Run
 usage: smith_waterman.py [-h] [--match-score MATCH_SCORE]
                          [--mismatch-score MISMATCH_SCORE]
                          [--gap-penalty GAP_PENALTY]
-                         [--output-file OUTPUT_FILE]
+                         [--output-file OUTPUT_FILE] [--improvement]
                          seq1 seq2
 
 Implementation of the Smith and Waterman algorithm for local sequence
@@ -33,4 +33,6 @@ optional arguments:
                         The penalty for a sequence gap (default: -2.0)
   --output-file OUTPUT_FILE, -o OUTPUT_FILE
                         Specify file to save the output (default: None)
+  --improvement         Prints all alignments with length > 5, score > 4 and
+                        gaps > 0 (default: False)
 ```
