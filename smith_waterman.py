@@ -1,5 +1,7 @@
 import argparse
 from colorama import Fore, Style
+from enum import Enum
+from itertools import chain
 import numpy as np
 import os
 import pandas as pd
@@ -7,82 +9,100 @@ import sys
 
 from alignment import Alignment, Alignments
 
+class Move(Enum):
+    HORIZONTAL = '\u2190'
+    VERTICAL = '\u2191'
+    DIAGONAL = '\u2196'
+
+class Cell:
+    def __init__(self, score, indices, origin):
+        self.score = score
+        self.indices = indices
+        self.origin = origin
+
+    def __str__(self):
+        return f'{self.origin.value} {self.score}'
+
+    def __eq__(self, other): 
+        return self.score == other.score 
+
+    def __ne__(self, other): 
+        return not self.__eq__
+
+    def __lt__(self, other): 
+        return self.score < other.score 
+     
+    def __le__(self, other):
+        return self.score <= other.score
+
+    def __gt__(self, other): 
+        return self.score > other.score 
+    
+    def __ge__(self, other):
+        return self.score >= other.score   
+
 def compute_scoring_matrix(seq1, seq2, match_score, mismatch_score, gap_penalty):
     n = len(seq1) + 1
     m = len(seq2) + 1
 
-    scoring_matrix = np.zeros((n, m))
+    scoring_matrix = [[Cell(0, (i, j), Move.DIAGONAL) for j in range(m)] for i in range(n)]
 
     for i in range(1, n):
         for j in range(1, m):
             seq_i = seq1[i-1]
             seq_j = seq2[j-1]
 
-            match = scoring_matrix[i - 1, j - 1] + (match_score if seq_i == seq_j else mismatch_score)
-            h_gap = scoring_matrix[i, j - 1] + gap_penalty
-            v_gap = scoring_matrix[i - 1, j] + gap_penalty
+            match = Cell(scoring_matrix[i - 1][j - 1].score + (match_score if seq_i == seq_j else mismatch_score), (i,j), Move.DIAGONAL)
+            h_gap = Cell(scoring_matrix[i][j - 1].score + gap_penalty, (i,j), Move.HORIZONTAL)
+            v_gap = Cell(scoring_matrix[i - 1][j].score + gap_penalty, (i,j), Move.VERTICAL)
 
-            scoring_matrix[i, j] = max(match, v_gap, h_gap, 0)
+            scoring_matrix[i][j] = max(match, h_gap, v_gap, Cell(0, (i, j), Move.DIAGONAL))
 
     return scoring_matrix
 
-def get_max_score_indexes(scoring_matrix):
-    return np.unravel_index(np.argmax(scoring_matrix, axis=None), scoring_matrix.shape)
-
-def traceback_process(scoring_matrix, seq1, seq2, max_indexes):
+def traceback_process(scoring_matrix, seq1, seq2, starting_cell):
     subseq1, subseq2 = '', ''
     max_gap = 0
     min_gap = max(len(seq1), len(seq2))
     n_gaps = 0
-    i_gap = 0
-    j_gap = 0
-    score = scoring_matrix[max_indexes]
-    starting_indexes = max_indexes
+    tmp_gap = None
+    actual_cell = starting_cell
 
-    while scoring_matrix[max_indexes] > 0:
-        i = max_indexes[0]
-        j = max_indexes[1]
+    while actual_cell.score > 0:
+        i, j = actual_cell.indices
         seq_i = seq1[i - 1]
         seq_j = seq2[j - 1]
         
-        if seq_i == seq_j:
-            if i_gap != 0:
-                min_gap = min(min_gap, i_gap)
-                max_gap = max(max_gap, i_gap)
+        if actual_cell.origin == Move.DIAGONAL:
+            if tmp_gap:
+                max_gap = max(max_gap, tmp_gap)
+                min_gap = min(min_gap, tmp_gap) if tmp_gap != 0 else min_gap
                 n_gaps += 1
-            if j_gap != 0:
-                min_gap = min(min_gap, j_gap)
-                max_gap = max(max_gap, j_gap)
-                n_gaps += 1
-            i_gap, j_gap = 0, 0
+                tmp_gap = None
 
             subseq1 += seq_i
             subseq2 += seq_j
-            max_indexes = (i-1, j-1)
-        elif scoring_matrix[i-1, j] > scoring_matrix[i, j-1]:
-            if i_gap != 0:
-                min_gap = min(min_gap, i_gap)
-                max_gap = max(max_gap, i_gap)
-                n_gaps += 1
-                i_gap = 0
-            j_gap += 1
-
-            subseq1 += seq_i
-            subseq2 += '-'
-            max_indexes = (i-1, j)
+            actual_cell = scoring_matrix[i-1][j-1]
         else:
-            if j_gap != 0:
-                min_gap = min(min_gap, j_gap)
-                max_gap = max(max_gap, j_gap)
-                n_gaps += 1
-                j_gap = 0
-            i_gap += 1
-            
-            subseq1 += '-'
-            subseq2 += seq_j
-            max_indexes = (i, j-1)
+            tmp_gap = tmp_gap+1 if tmp_gap else 1
+            if actual_cell.origin == Move.HORIZONTAL:
+                subseq1 += '-'
+                subseq2 += seq_j
+                actual_cell = scoring_matrix[i][j-1]
+            elif actual_cell.origin == Move.VERTICAL:
+                subseq1 += seq_i
+                subseq2 += '-'
+                actual_cell = scoring_matrix[i-1][j]
+            else:
+                raise Exception(f'Something went wrong origin must be one of {",".join([move for move in Move])}')
         
-    return Alignment(subseq1[::-1], subseq2[::-1], max_gap, min_gap, n_gaps, score, starting_indexes)
+    if tmp_gap:
+        max_gap = max(max_gap, tmp_gap)
+        min_gap = min(min_gap, tmp_gap) if tmp_gap != 0 else min_gap
+        n_gaps += 1
+        tmp_gap = None
+        
+    return Alignment(subseq1[::-1], subseq2[::-1], max_gap, min_gap, n_gaps, starting_cell.score, starting_cell.indices)
 
 def printable_matrix(matrix, seq1, seq2):
     df = pd.DataFrame(matrix, index=[(i, c) for i, c in enumerate(' '+seq1)], columns=[(i, c) for i, c in enumerate(' '+seq2)])
@@ -91,13 +111,13 @@ def printable_matrix(matrix, seq1, seq2):
 
 def find_alignments_by_score(scoring_matrix, seq1, seq2):
     alignments = Alignments()
-    n, m = scoring_matrix.shape
+    n, m = len(seq1)+1, len(seq2)+1
 
     for i in range(1, n):
         for j in range(1, m):
-            score = scoring_matrix[i, j]
-            if score > 0:
-                alignments.append(traceback_process(scoring_matrix, seq1, seq2, (i, j)))
+            cell = scoring_matrix[i][j]
+            if cell.score > 0:
+                alignments.append(traceback_process(scoring_matrix, seq1, seq2, cell))
     
     return alignments
 
@@ -126,9 +146,9 @@ if __name__ == '__main__':
 
     scoring_matrix = compute_scoring_matrix(seq1, seq2, match_score, mismatch_score, gap_penalty)
     
-    max_indexes = get_max_score_indexes(scoring_matrix)
+    max_score_cell = max(chain.from_iterable(scoring_matrix))
 
-    best_alignement = traceback_process(scoring_matrix, seq1, seq2, max_indexes)
+    best_alignement = traceback_process(scoring_matrix, seq1, seq2, max_score_cell)
 
     matrix_to_print = printable_matrix(scoring_matrix, seq1, seq2)
 
