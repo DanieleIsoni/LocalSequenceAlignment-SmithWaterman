@@ -1,11 +1,11 @@
 import argparse
 import os
+import re
 import sys
 from enum import Enum
 from itertools import chain
 from typing import List
 
-import numpy as np
 import pandas as pd
 from colorama import Fore, Style
 
@@ -153,13 +153,47 @@ def find_alignments_by_score(scoring_matrix: List[List[Cell]], seq1: str, seq2: 
     return alignments
 
 
+def sequence_arg(value):
+    """
+    Validate the seq1 or seq2 argument
+    Function will ensure that the arguments matches a given regex that allows
+    only characters from A, C, G, T.
+
+    Parameters
+    ----------
+    - value - *string* - automatically passed by the ArgumentParser object
+    Returns
+    -------
+    Returns the value back to the ArgumentParser object
+    Exceptions
+    ----------
+    - argparse.ArgumentTypeError - if the passed argument doesn't match the
+    regex
+    """
+    # Regex check
+    if not re.match("^[ACTGactg]+$", value):
+        raise argparse.ArgumentTypeError(
+            "must contain only amino acids from the following list: A, C, G, T"
+        )
+
+    return value
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Implementation of the Smith and Waterman algorithm for local sequence alignment by Daniele Isoni",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("seq1", type=str, help="First input sequence")
-    parser.add_argument("seq2", type=str, help="Second input sequence")
+    parser.add_argument(
+        "seq1",
+        type=sequence_arg,
+        help="First input sequence (must contain only amino acids from the following list: A, C, G, T)",
+    )
+    parser.add_argument(
+        "seq2",
+        type=sequence_arg,
+        help="Second input sequence (must contain only amino acids from the following list: A, C, G, T)",
+    )
     parser.add_argument(
         "--match-score", type=float, default=3.0, help="The score for a sequence match"
     )
