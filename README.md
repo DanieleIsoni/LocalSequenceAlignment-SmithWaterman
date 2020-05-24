@@ -8,6 +8,8 @@ Run
 
 # Usage
 
+Here is the output for the command `python smith_waterman.py -h`
+
 ```
 usage: smith_waterman.py [-h] [--match-score MATCH_SCORE]
                          [--mismatch-score MISMATCH_SCORE]
@@ -19,8 +21,10 @@ Implementation of the Smith and Waterman algorithm for local sequence
 alignment by Daniele Isoni
 
 positional arguments:
-  seq1                  First input sequence
-  seq2                  Second input sequence
+  seq1                  First input sequence (must contain only amino acids
+                        from the following list: A, C, G, T)
+  seq2                  Second input sequence (must contain only amino acids
+                        from the following list: A, C, G, T)
 
 optional arguments:
   -h, --help            show this help message and exit
