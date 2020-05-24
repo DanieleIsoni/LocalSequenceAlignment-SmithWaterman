@@ -81,6 +81,7 @@ def traceback_process(
     min_gap = max(len(seq1), len(seq2))
     n_gaps = 0
     tmp_gap = None
+    gap_direction = None
     actual_cell = starting_cell
 
     while actual_cell.score > 0:
@@ -89,35 +90,53 @@ def traceback_process(
         seq_j = seq2[j - 1]
 
         if actual_cell.origin == Move.DIAGONAL:
-            if tmp_gap:
+            if tmp_gap is not None:
                 max_gap = max(max_gap, tmp_gap)
-                min_gap = min(min_gap, tmp_gap) if tmp_gap != 0 else min_gap
+                min_gap = min(min_gap, tmp_gap)
                 n_gaps += 1
                 tmp_gap = None
+                gap_direction = None
 
             subseq1 += seq_i
             subseq2 += seq_j
             actual_cell = scoring_matrix[i - 1][j - 1]
-        else:
-            tmp_gap = tmp_gap + 1 if tmp_gap else 1
-            if actual_cell.origin == Move.HORIZONTAL:
-                subseq1 += "-"
-                subseq2 += seq_j
-                actual_cell = scoring_matrix[i][j - 1]
-            elif actual_cell.origin == Move.VERTICAL:
-                subseq1 += seq_i
-                subseq2 += "-"
-                actual_cell = scoring_matrix[i - 1][j]
+        elif actual_cell.origin == Move.HORIZONTAL:
+            if gap_direction == Move.HORIZONTAL:
+                tmp_gap += 1
             else:
-                raise Exception(
-                    f'Something went wrong origin must be one of {",".join([move for move in Move])}'
-                )
+                if tmp_gap is not None:
+                    max_gap = max(max_gap, tmp_gap)
+                    min_gap = min(min_gap, tmp_gap)
+                    n_gaps += 1
+                tmp_gap = 1
+                gap_direction = Move.HORIZONTAL
 
-    if tmp_gap:
+            subseq1 += "-"
+            subseq2 += seq_j
+            actual_cell = scoring_matrix[i][j - 1]
+        elif actual_cell.origin == Move.VERTICAL:
+            if gap_direction == Move.VERTICAL:
+                tmp_gap += 1
+            else:
+                if tmp_gap is not None:
+                    max_gap = max(max_gap, tmp_gap)
+                    min_gap = min(min_gap, tmp_gap)
+                    n_gaps += 1
+                tmp_gap = 1
+                gap_direction = Move.VERTICAL
+
+            subseq1 += seq_i
+            subseq2 += "-"
+            actual_cell = scoring_matrix[i - 1][j]
+        else:
+            raise Exception(
+                f'Something went wrong origin must be one of {",".join([move for move in Move])}'
+            )
+
+    if tmp_gap is not None:
         max_gap = max(max_gap, tmp_gap)
-        min_gap = min(min_gap, tmp_gap) if tmp_gap != 0 else min_gap
+        min_gap = min(min_gap, tmp_gap)
         n_gaps += 1
-        tmp_gap = None
 
     return Alignment(
         subseq1[::-1],
