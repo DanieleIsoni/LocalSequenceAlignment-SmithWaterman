@@ -207,9 +207,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--output-file", "-o", type=str, help="Specify file to save the output")
     parser.add_argument(
-        "--improvement",
-        action="store_true",
-        help="Prints all alignments with length > 5, score > 4 and gaps > 0",
+        "--all-alignments", action="store_true", help="Prints all alignments",
     )
 
     args = parser.parse_args()
@@ -220,7 +218,7 @@ if __name__ == "__main__":
     mismatch_score = args.mismatch_score or -match_score
     gap_penalty = args.gap_penalty
     output_file = args.output_file
-    improvement = args.improvement
+    all_alignments = args.all_alignments
 
     scoring_matrix = compute_scoring_matrix(seq1, seq2, match_score, mismatch_score, gap_penalty)
 
@@ -253,14 +251,12 @@ if __name__ == "__main__":
 
     print(matrix_to_print)
 
-    if improvement:
+    if all_alignments:
         alignments = find_alignments_by_score(scoring_matrix, seq1, seq2)
 
-        filtered_alignments = alignments.filter(length__gt=5, score__gt=4, min_gap__gt=0)
+        alignments.sort(key="score", reverse=True)
 
-        filtered_alignments.sort(key="score", reverse=True)
-
-        for al in filtered_alignments:
+        for al in alignments:
             if output_file:
                 f.write(al.to_string(to_file=True) + "\n")
             print(al)

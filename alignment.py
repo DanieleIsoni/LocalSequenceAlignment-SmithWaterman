@@ -91,17 +91,11 @@ trace_back_start_indices: {self.indices}
 class Alignments(object):
     """Represents a list of alignments
 
-    This has been created to have a structure to manage better the filtering of the alignments found.
+    This has been created to have a structure to manage better the alignments found.
 
     Attributes:
-        filter_props (:obj:`dict` of str): The props allowed for filtering the alignments.
-        filter_operators (:obj:`dict` of str): The operators allowed for filtering the alignments.
-
         alignments (:obj:`list` of Alignment): This is the actual list of alignments
     """
-
-    filter_props = {"length", "max_gap", "min_gap", "n_gaps", "score"}
-    filter_operators = {"neq", "gt", "gte", "lt", "lte"}
 
     def __init__(self, alignments: List[Alignment] = []) -> None:
         if any(not isinstance(a, Alignment) for a in alignments):
@@ -133,76 +127,3 @@ class Alignments(object):
             raise TypeError("One or more of the objects is not an Alignment object.")
 
         self._alignments.append(alignment)
-
-    def _get_filter_option(self, kwarg: str) -> (str, str):
-        """Given an argument provides the property and the operator to be used to filter.
-
-        Args:
-            kwarg (str): The argument provided in the form property__operator  (e.g.: length__neq, n_gaps__gt, max_gap)
-
-        Returns:
-            A tuple containing the property and the operator if both are valid, otherwise raises an exception.
-        """
-
-        kwarg_list = kwarg.split("__")
-
-        if len(kwarg_list) > 2:
-            raise TypeError(f"filter() got an unexpected keyword argument {kwarg}.")
-
-        prop = kwarg_list[0]
-        operator = kwarg_list[1] if len(kwarg_list) > 1 else None
-
-        if prop not in self.filter_props:
-            raise TypeError(
-                f"{prop} is not a valid filter() properties. Valid properties are: {','.join(self.filter_props)}"
-            )
-
-        if operator and operator not in self.filter_operators:
-            raise TypeError(
-                f"{operator} is not a valid filter() operator. Valid operators are: {','.join(self.filter_operators)}"
-            )
-
-        return prop, operator
-
-    def _compute_expression(self, alignment: Alignment, query: (str, str), value: Any) -> bool:
-        """This method computes the expression provided on the given alignment
-
-        Args:
-            alignment (:obj:`Alignment`): The alignemnt to be tested
-            query ((str, str)): A tuple of strings which respectively are the property and
-                the operator that need to be applied to the alignment
-
-        Returns:
-            A boolean that indicates if the alignment is to be kept (True) or filtered (False)
-        """
-
-        prop, operator = self._get_filter_option(query)
-
-        if not operator:
-            return getattr(alignment, prop) == value
-        elif operator == "neq":
-            return getattr(alignment, prop) != value
-        elif operator == "gt":
-            return getattr(alignment, prop) > value
-        elif operator == "gte":
-            return getattr(alignment, prop) >= value
-        elif operator == "lt":
-            return getattr(alignment, prop) < value
-        elif operator == "lte":
-            return getattr(alignment, prop) <= value
-
-    def filter(self, **kwargs: dict) -> "Alignments":
-        """The actual method used to filter the alignments"""
-
-        filtered_alignments = []
-        for alignment in self._alignments:
-            is_alignment_wanted = True
-            for key, value in kwargs.items():
-                is_alignment_wanted = is_alignment_wanted and self._compute_expression(
-                    alignment, key, value
-                )
-
-            if is_alignment_wanted:
-                filtered_alignments.append(alignment)
-
-        return Alignments(filtered_alignments)
