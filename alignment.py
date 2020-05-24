@@ -45,6 +45,8 @@ class Alignment:
         self.subseq1 = subseq1
         self.subseq2 = subseq2
         self.length = len(subseq1)
+        self.num_matches = sum([a == b for a, b in zip(subseq1, subseq2)])
+        self.num_mismatches = sum(["-" not in [a, b] and a != b for a, b in zip(subseq1, subseq2)])
         self.max_gap = max_gap
         self.min_gap = min_gap
         self.n_gaps = n_gaps
@@ -59,6 +61,9 @@ class Alignment:
             if c1 == c2:
                 string1 += Fore.GREEN + c1
                 string2 += Fore.GREEN + c2
+            elif "-" in [c1, c2]:
+                string1 += Fore.YELLOW + c1
+                string2 += Fore.YELLOW + c2
             else:
                 string1 += Fore.RED + c1
                 string2 += Fore.RED + c2
@@ -78,8 +83,11 @@ class Alignment:
             alignment_string += self._colored_subsequences()
 
         return f"""{alignment_string}
-max_gap: {self.max_gap}
-min_gap: {self.min_gap}
+length: {self.length}
+num_matches: {self.num_matches}
+num_mismatches: {self.num_mismatches}
+max_gap_length: {self.max_gap}
+min_gap_length: {self.min_gap}
 n_gaps: {self.n_gaps}
 trace_back_start_indices: {self.indices}
 """
