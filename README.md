@@ -8,6 +8,8 @@ Run
 
 # Usage
 
+Here is the output for the command `python smith_waterman.py -h`
+
 ```
 usage: smith_waterman.py [-h] [--match-score MATCH_SCORE]
                          [--mismatch-score MISMATCH_SCORE]
