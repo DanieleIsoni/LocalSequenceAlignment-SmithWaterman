@@ -13,13 +13,31 @@ from alignment import Alignment, Alignments
 
 
 class Move(Enum):
+    """This enum represents the possible directions for the choices while computing the scoring matrix
+    """
+
     HORIZONTAL = "\u2190"
     VERTICAL = "\u2191"
     DIAGONAL = "\u2196"
 
 
 class Cell:
+    """This represents a cell of the scoring matrix
+
+    Attributes:
+        score (float): the score of the amino acid pair
+        indices ((int, int)): the indices of the Cell
+        origin (Move): the direction for the traceback process
+    """
+
     def __init__(self, score: float, indices: (int, int), origin: Move) -> None:
+        """
+        Args:
+            score (float): the score of the amino acid pair
+            indices ((int, int)): the indices of the Cell
+            origin (Move): the direction for the traceback process
+        """
+
         self.score = score
         self.indices = indices
         self.origin = origin
@@ -27,6 +45,7 @@ class Cell:
     def __str__(self) -> str:
         return f"{self.origin.value} {self.score}"
 
+    # The following methods are used for comparing Cells by score
     def __eq__(self, other: "Cell") -> bool:
         return self.score == other.score
 
@@ -49,9 +68,20 @@ class Cell:
 def compute_scoring_matrix(
     seq1: str, seq2: str, match_score: float, mismatch_score: float, gap_penalty: float
 ) -> List[List[Cell]]:
+    """This method is used to compute the scoring matrix for
+    Args:
+        seq1 (str): the first sequence
+        seq2 (str): the second sequence
+        match_score (float): the score for the match
+        mismatch_score (float): the score for the mismatch
+        gap_penalty (float): the penalty fot the gap
+    Returns:
+        the matrix containing cell content
+     """
     n = len(seq1) + 1
     m = len(seq2) + 1
 
+    # Initialize the scoring matrix
     scoring_matrix = [[Cell(0, (i, j), Move.DIAGONAL) for j in range(m)] for i in range(n)]
 
     for i in range(1, n):
@@ -59,6 +89,7 @@ def compute_scoring_matrix(
             seq_i = seq1[i - 1]
             seq_j = seq2[j - 1]
 
+            # Compute the scoring for match/mismatch and gaps
             match = Cell(
                 scoring_matrix[i - 1][j - 1].score
                 + (match_score if seq_i == seq_j else mismatch_score),
@@ -68,6 +99,7 @@ def compute_scoring_matrix(
             h_gap = Cell(scoring_matrix[i][j - 1].score + gap_penalty, (i, j), Move.HORIZONTAL)
             v_gap = Cell(scoring_matrix[i - 1][j].score + gap_penalty, (i, j), Move.VERTICAL)
 
+            # Store the result in the matrix
             scoring_matrix[i][j] = max(match, h_gap, v_gap, Cell(0, (i, j), Move.DIAGONAL))
 
     return scoring_matrix
@@ -76,6 +108,15 @@ def compute_scoring_matrix(
 def traceback_process(
     scoring_matrix: List[List[Cell]], seq1: str, seq2: str, starting_cell: Cell
 ) -> Alignment:
+    """This method computes the traceback process for retrieving an alignment
+    Args:
+        scoring_matrix (List[List[Cell]]): the scoring matrix
+        seq1 (str): the first sequence
+        seq2 (str): the second sequence
+        starting_cell (Cell): the starting cell for the traceback process
+    Returns:
+        The alignment starting from starting_cell
+    """
     subseq1, subseq2 = "", ""
     max_gap = 0
     min_gap = max(len(seq1), len(seq2))
@@ -91,6 +132,7 @@ def traceback_process(
 
         if actual_cell.origin == Move.DIAGONAL:
             if tmp_gap is not None:
+                # If there was a gap end it and update counts
                 max_gap = max(max_gap, tmp_gap)
                 min_gap = min(min_gap, tmp_gap)
                 n_gaps += 1
@@ -150,6 +192,14 @@ def traceback_process(
 
 
 def printable_matrix(matrix: List[list], seq1: str, seq2: str) -> str:
+    """This prints the matrix in a readable format
+    Args:
+        matrix (List[list]): the matrix to be printed
+        seq1 (str):
+        seq2 (str):
+    Returns:
+        The printable string
+    """
     df = pd.DataFrame(
         matrix,
         index=[(i, c) for i, c in enumerate(" " + seq1)],
@@ -160,6 +210,14 @@ def printable_matrix(matrix: List[list], seq1: str, seq2: str) -> str:
 
 
 def find_alignments_by_score(scoring_matrix: List[List[Cell]], seq1: str, seq2: str) -> Alignments:
+    """This method computes all the alignments for a given scoring matrix
+    Args:
+        scoring_matrix (List[List[Cell]]): the scoring matrix
+        seq1 (str): the first sequence
+        seq2 (str): the second sequence
+    Returns:
+        All the alignments from the scoring matrix without overlap
+    """
     alignments = Alignments()
     n, m = len(seq1) + 1, len(seq2) + 1
 
@@ -178,16 +236,12 @@ def sequence_arg(value):
     Function will ensure that the arguments matches a given regex that allows
     only characters from A, C, G, T.
 
-    Parameters
-    ----------
-    - value - *string* - automatically passed by the ArgumentParser object
-    Returns
-    -------
-    Returns the value back to the ArgumentParser object
-    Exceptions
-    ----------
-    - argparse.ArgumentTypeError - if the passed argument doesn't match the
-    regex
+    Args:
+    value (str): automatically passed by the ArgumentParser object
+    Returns:
+        Returns the value back to the ArgumentParser object
+    Exceptions:
+        argparse.ArgumentTypeError - if the passed argument doesn't match the regex
     """
     # Regex check
     if not re.match("^[ACTGactg]+$", value):
@@ -250,6 +304,7 @@ if __name__ == "__main__":
     matrix_to_print = printable_matrix(scoring_matrix, seq1, seq2)
 
     if output_file:
+        # If the file exists ask the user if he wants to overwrite the file
         if os.path.exists(output_file):
             choice = (
                 input(

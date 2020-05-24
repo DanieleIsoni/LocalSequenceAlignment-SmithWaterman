@@ -32,13 +32,13 @@ class Alignment:
     ) -> None:
         """
         Args:
-        subseq1 (str): The first subsequence of the alignment
-        subseq2 (str): The second subsequence of the alignment
-        max_gap (int): The size of the biggest gap found in the alignment
-        min_gap (int): The size of the smaller gap found in the alignment
-        n_gaps (int): The number of gaps found in the alignment
-        score (float): The score of the alignment
-        indices ((int, int)): The starting indices for the traceback of the alignment
+            subseq1 (str): The first subsequence of the alignment
+            subseq2 (str): The second subsequence of the alignment
+            max_gap (int): The size of the biggest gap found in the alignment
+            min_gap (int): The size of the smaller gap found in the alignment
+            n_gaps (int): The number of gaps found in the alignment
+            score (float): The score of the alignment
+            indices ((int, int)): The starting indices for the traceback of the alignment
         """
 
         if len(subseq1) != len(subseq2):
