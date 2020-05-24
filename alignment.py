@@ -11,6 +11,8 @@ class Alignment:
         subseq1 (str): The first subsequence of the alignment
         subseq2 (str): The second subsequence of the alignment
         length (int): The length of the alignment
+        num_matches (int): The number of matches in the alignment
+        num_mismatches (int): The number of mismatches in the alignment
         max_gap (int): The size of the biggest gap found in the alignment
         min_gap (int): The size of the smaller gap found in the alignment
         n_gaps (int): The number of gaps found in the alignment
