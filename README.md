@@ -14,15 +14,17 @@ Here is the output for the command `python smith_waterman.py -h`
 usage: smith_waterman.py [-h] [--match-score MATCH_SCORE]
                          [--mismatch-score MISMATCH_SCORE]
                          [--gap-penalty GAP_PENALTY]
-                         [--output-file OUTPUT_FILE] [--improvement]
+                         [--output-file OUTPUT_FILE] [--all-alignments]
                          seq1 seq2
 
 Implementation of the Smith and Waterman algorithm for local sequence
 alignment by Daniele Isoni
 
 positional arguments:
-  seq1                  First input sequence
-  seq2                  Second input sequence
+  seq1                  First input sequence (must contain only amino acids
+                        from the following list: A, C, G, T)
+  seq2                  Second input sequence (must contain only amino acids
+                        from the following list: A, C, G, T)
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -35,6 +37,5 @@ optional arguments:
                         The penalty for a sequence gap (default: -2.0)
   --output-file OUTPUT_FILE, -o OUTPUT_FILE
                         Specify file to save the output (default: None)
-  --improvement         Prints all alignments with length > 5, score > 4 and
-                        gaps > 0 (default: False)
+  --all-alignments      Prints all alignments (default: False)
 ```
