@@ -1,7 +1,7 @@
 from operator import attrgetter
 from typing import Any, Iterator, List
 
-from colorama import Fore, Style
+from colorama import Back, Fore, Style
 
 
 class Alignment:
@@ -13,8 +13,8 @@ class Alignment:
         length (int): The length of the alignment
         num_matches (int): The number of matches in the alignment
         num_mismatches (int): The number of mismatches in the alignment
-        max_gap (int): The size of the biggest gap found in the alignment
-        min_gap (int): The size of the smaller gap found in the alignment
+        max_gap_length (int): The size of the biggest gap found in the alignment
+        min_gap_length (int): The size of the smaller gap found in the alignment
         n_gaps (int): The number of gaps found in the alignment
         score (float): The score of the alignment
         indices ((int, int)): The starting indices for the traceback of the alignment
@@ -24,8 +24,8 @@ class Alignment:
         self,
         subseq1: str,
         subseq2: str,
-        max_gap: int,
-        min_gap: int,
+        max_gap_length: int,
+        min_gap_length: int,
         n_gaps: int,
         score: float,
         indices: (int, int),
@@ -34,8 +34,8 @@ class Alignment:
         Args:
             subseq1 (str): The first subsequence of the alignment
             subseq2 (str): The second subsequence of the alignment
-            max_gap (int): The size of the biggest gap found in the alignment
-            min_gap (int): The size of the smaller gap found in the alignment
+            max_gap_length (int): The size of the biggest gap found in the alignment
+            min_gap_length (int): The size of the smaller gap found in the alignment
             n_gaps (int): The number of gaps found in the alignment
             score (float): The score of the alignment
             indices ((int, int)): The starting indices for the traceback of the alignment
@@ -49,8 +49,8 @@ class Alignment:
         self.length = len(subseq1)
         self.num_matches = sum([a == b for a, b in zip(subseq1, subseq2)])
         self.num_mismatches = sum(["-" not in [a, b] and a != b for a, b in zip(subseq1, subseq2)])
-        self.max_gap = max_gap
-        self.min_gap = min_gap
+        self.max_gap_length = max_gap_length
+        self.min_gap_length = min_gap_length
         self.n_gaps = n_gaps
         self.score = score
         self.indices = indices
@@ -71,26 +71,41 @@ class Alignment:
                 string2 += Fore.RED + c2
         return f"{string1}\n{string2}{Style.RESET_ALL}"
 
-    def to_string(self, to_file: bool = False) -> str:
+    def _get_coloured_if_sorting(self, to_print: str, sort_param: str = None):
+        uncoloured_string = f"{to_print}: {getattr(self, to_print)}"
+        if to_print != sort_param:
+            return uncoloured_string
+
+        return Back.LIGHTBLUE_EX + Fore.BLACK + f"{uncoloured_string} " + Style.RESET_ALL
+
+    def to_string(self, to_file: bool = False, sort_param: str = None) -> str:
         """This is needed to provied an output string that is colored if not to be printed to file.
 
         Args:
             to_file (bool): if True the output will not be colored.
         """
 
-        alignment_string = f"score: {self.score}\n"
         if to_file:
-            alignment_string += self.subseq1 + "\n" + self.subseq2
-        else:
-            alignment_string += self._colored_subsequences()
-
-        return f"""{alignment_string}
+            return f"""score: {self.score}
 length: {self.length}
+{self.subseq1}
+{self.subseq2}
 num_matches: {self.num_matches}
 num_mismatches: {self.num_mismatches}
-max_gap_length: {self.max_gap}
-min_gap_length: {self.min_gap}
+max_gap_length: {self.max_gap_length}
+min_gap_length: {self.min_gap_length}
 n_gaps: {self.n_gaps}
+trace_back_start_indices: {self.indices}
+"""
+
+        return f"""{self._get_coloured_if_sorting('score', sort_param)}
+{self._get_coloured_if_sorting('length', sort_param)}
+{self._colored_subsequences()}
+{self._get_coloured_if_sorting('num_matches', sort_param)}
+{self._get_coloured_if_sorting('num_mismatches', sort_param)}
+{self._get_coloured_if_sorting('max_gap_length', sort_param)}
+{self._get_coloured_if_sorting('min_gap_length', sort_param)}
+{self._get_coloured_if_sorting('n_gaps', sort_param)}
 trace_back_start_indices: {self.indices}
 """
 
@@ -114,12 +129,19 @@ class Alignments(object):
         "length",
         "num_matches",
         "num_mismatches",
-        "max_gap",
-        "min_gap",
+        "max_gap_length",
+        "min_gap_length",
         "n_gaps",
         "score",
     }
-    filter_operators = {"neq", "gt", "gte", "lt", "lte"}
+    filter_operators_map_alpha2symbol = {
+        "neq": "!=",
+        "gt": ">",
+        "gte": ">=",
+        "lt": "<",
+        "lte": "<=",
+    }
+    filter_operators = filter_operators_map_alpha2symbol.keys()
 
     def __init__(self, alignments: List[Alignment] = []) -> None:
         if any(not isinstance(a, Alignment) for a in alignments):
@@ -156,7 +178,7 @@ class Alignments(object):
         """Given an argument provides the property and the operator to be used to filter.
 
         Args:
-            kwarg (str): The argument provided in the form property__operator  (e.g.: length__neq, n_gaps__gt, max_gap)
+            kwarg (str): The argument provided in the form property__operator  (e.g.: length__neq, n_gaps__gt, max_gap_length)
 
         Returns:
             A tuple containing the property and the operator if both are valid, otherwise raises an exception.
@@ -224,3 +246,8 @@ class Alignments(object):
                 filtered_alignments.append(alignment)
 
         return Alignments(filtered_alignments)
+
+    def print(self, sort_param=None):
+        for i, alignment in enumerate(self._alignments):
+            print(f"Alignments {i}:")
+            print(alignment.to_string(sort_param=sort_param))

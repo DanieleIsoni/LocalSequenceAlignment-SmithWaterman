@@ -19,6 +19,7 @@ class Move(Enum):
     HORIZONTAL = "\u2190"
     VERTICAL = "\u2191"
     DIAGONAL = "\u2196"
+    NONE = "-"
 
 
 class Cell:
@@ -82,7 +83,7 @@ def compute_scoring_matrix(
     m = len(seq2) + 1
 
     # Initialize the scoring matrix
-    scoring_matrix = [[Cell(0, (i, j), Move.DIAGONAL) for j in range(m)] for i in range(n)]
+    scoring_matrix = [[Cell(0, (i, j), Move.NONE) for j in range(m)] for i in range(n)]
 
     for i in range(1, n):
         for j in range(1, m):
@@ -118,8 +119,8 @@ def traceback_process(
         The alignment starting from starting_cell
     """
     subseq1, subseq2 = "", ""
-    max_gap = 0
-    min_gap = max(len(seq1), len(seq2))
+    max_gap_length = 0
+    min_gap_length = max(len(seq1), len(seq2))
     n_gaps = 0
     tmp_gap = None
     gap_direction = None
@@ -133,8 +134,8 @@ def traceback_process(
         if actual_cell.origin == Move.DIAGONAL:
             if tmp_gap is not None:
                 # If there was a gap end it and update counts
-                max_gap = max(max_gap, tmp_gap)
-                min_gap = min(min_gap, tmp_gap)
+                max_gap_length = max(max_gap_length, tmp_gap)
+                min_gap_length = min(min_gap_length, tmp_gap)
                 n_gaps += 1
                 tmp_gap = None
                 gap_direction = None
@@ -147,8 +148,8 @@ def traceback_process(
                 tmp_gap += 1
             else:
                 if tmp_gap is not None:
-                    max_gap = max(max_gap, tmp_gap)
-                    min_gap = min(min_gap, tmp_gap)
+                    max_gap_length = max(max_gap_length, tmp_gap)
+                    min_gap_length = min(min_gap_length, tmp_gap)
                     n_gaps += 1
                 tmp_gap = 1
                 gap_direction = Move.HORIZONTAL
@@ -161,8 +162,8 @@ def traceback_process(
                 tmp_gap += 1
             else:
                 if tmp_gap is not None:
-                    max_gap = max(max_gap, tmp_gap)
-                    min_gap = min(min_gap, tmp_gap)
+                    max_gap_length = max(max_gap_length, tmp_gap)
+                    min_gap_length = min(min_gap_length, tmp_gap)
                     n_gaps += 1
                 tmp_gap = 1
                 gap_direction = Move.VERTICAL
@@ -176,15 +177,15 @@ def traceback_process(
             )
 
     if tmp_gap is not None:
-        max_gap = max(max_gap, tmp_gap)
-        min_gap = min(min_gap, tmp_gap)
+        max_gap_length = max(max_gap_length, tmp_gap)
+        min_gap_length = min(min_gap_length, tmp_gap)
         n_gaps += 1
 
     return Alignment(
         subseq1[::-1],
         subseq2[::-1],
-        max_gap,
-        min_gap,
+        max_gap_length,
+        min_gap_length,
         n_gaps,
         starting_cell.score,
         starting_cell.indices,
@@ -252,12 +253,32 @@ if __name__ == "__main__":
     parser.add_argument(
         "--gap-penalty", type=float, default=-2.0, help="The penalty for a sequence gap"
     )
-    parser.add_argument("--output-file", "-o", type=str, help="Specify file to save the output")
     parser.add_argument(
-        "--improvement",
-        action="store_true",
-        help="Prints all alignments with length > 5, score > 4 and gaps > 0",
+        "--sort",
+        type=str,
+        choices=list(Alignments.filter_props),
+        help="The parameter by which alignments will be sorted",
     )
+    parser.add_argument(
+        "--reverse-sort",
+        action="store_true",
+        help="If this is specified alignments sort will be reversed",
+    )
+
+    parser.add_argument("--output-file", "-o", type=str, help="Specify file to save the output")
+
+    for prop in Alignments.filter_props:
+        prop_ = prop.replace("_", "-")
+        parser.add_argument(
+            f"--{prop_}", type=int, help=f"Specify this parameter to filter by {prop}"
+        )
+        parser.add_argument(
+            f"--{prop_}-operator",
+            type=str,
+            choices=["eq"] + list(Alignments.filter_operators),
+            default="eq",
+            help=f"Specify this parameter to filter by {prop} {prop.upper()}_OPERATOR value",
+        )
 
     args = parser.parse_args()
 
@@ -267,7 +288,17 @@ if __name__ == "__main__":
     mismatch_score = args.mismatch_score or -match_score
     gap_penalty = args.gap_penalty
     output_file = args.output_file
-    improvement = args.improvement
+    sort_param = args.sort
+    reverse_sort = args.reverse_sort
+    filter_dict = {}
+    for prop in Alignments.filter_props:
+        value = getattr(args, prop)
+        if value is not None:
+            operator = getattr(args, f"{prop}_operator")
+            if operator == "eq":
+                filter_dict[prop] = value
+            else:
+                filter_dict[f"{prop}__{operator}"] = value
 
     scoring_matrix = compute_scoring_matrix(seq1, seq2, match_score, mismatch_score, gap_penalty)
 
@@ -298,25 +329,31 @@ if __name__ == "__main__":
 
         f = open(output_file, "w")
         f.write(matrix_to_print)
-
     print(matrix_to_print)
 
-    if improvement:
-        alignments = find_alignments_by_score(scoring_matrix, seq1, seq2)
+    alignments = find_alignments_by_score(scoring_matrix, seq1, seq2)
 
-        filtered_alignments = alignments.filter(length__gt=5, score__gt=4, min_gap__gt=0)
+    # Change this statement to the following if you want to filter only if arguments are passed:
+    # if filter_dict is not None and filter_dict != {}:
+    #     alignments = alignments.filter(**filter_dict)
+    alignments = (
+        alignments.filter(length__gt=5, score__gt=3)
+        if filter_dict == {}
+        else alignments.filter(**filter_dict)
+    )
 
-        filtered_alignments.sort(key="score", reverse=True)
-
-        for al in filtered_alignments:
-            if output_file:
-                f.write(al.to_string(to_file=True) + "\n")
-            print(al)
+    if sort_param is not None:
+        alignments.sort(key=sort_param, reverse=reverse_sort)
     else:
-        out_string = f"""seq1: {seq1}
-seq2: {seq2}
-{best_alignement}
-"""
-        if output_file:
-            f.write(out_string)
-        print(out_string)
+        alignments.sort(key="length", reverse=True)
+
+    if output_file:
+        for i, al in enumerate(alignments):
+            f.write(f"Alignment {i}:\n")
+            f.write(al.to_string(to_file=True) + "\n")
+        f.close()
+
+    if sort_param is None:
+        alignments.print(sort_param="length")
+    else:
+        alignments.print(sort_param=sort_param)
