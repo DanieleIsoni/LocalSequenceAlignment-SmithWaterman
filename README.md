@@ -100,6 +100,6 @@ optional arguments:
 ```
 
 Examples:
-- `py smith_waterman.py TGTTACGG GGTTGACTA`
-- `py smith_waterman.py TGTTACGG GGTTGACTA --match-score=5 --mismatch-score=-5 --gap-penalty=-3 -o=results.txt`
-- `py smith_waterman.py TGTTACGG GGTTGACTA --length=5 --length-operator=gt --score=3 --score-operator=gt --sort=length --reverse-sort` This returns all the alignments, ordered by decreasing alignment length, with length > 5 and score > 3
+- `python smith_waterman.py TGTTACGG GGTTGACTA`
+- `python smith_waterman.py TGTTACGG GGTTGACTA --match-score=5 --mismatch-score=-5 --gap-penalty=-3 -o=results.txt`
+- `python smith_waterman.py TGTTACGG GGTTGACTA --length=5 --length-operator=gt --score=3 --score-operator=gt --sort=length --reverse-sort` This returns all the alignments, ordered by decreasing alignment length, with length > 5 and score > 3
