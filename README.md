@@ -1,6 +1,9 @@
 # LocalSequenceAlignment-SmithWaterman
 A python implementation of the local sequence alignment algorithm by Smith and Waterman
 
+The main file is the smith_waterman.py which contains the core of the algorithm.
+The alignment.py contains some classes created for a better management of the object throughout the algorithm.
+
 # Installation
 
 Run
