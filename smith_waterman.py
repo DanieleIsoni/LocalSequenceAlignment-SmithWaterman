@@ -25,7 +25,7 @@ class Cell:
     """This represents a cell of the scoring matrix
 
     Attributes:
-        score (float): the score of the amino acid pair
+        score (float): the score of the pair
         indices ((int, int)): the indices of the Cell
         origin (Move): the direction for the traceback process
     """
@@ -33,10 +33,11 @@ class Cell:
     def __init__(self, score: float, indices: (int, int), origin: Move) -> None:
         """
         Args:
-            score (float): the score of the amino acid pair
+            score (float): the score of the pair
             indices ((int, int)): the indices of the Cell
             origin (Move): the direction for the traceback process
         """
+
         self.score = score
         self.indices = indices
         self.origin = origin
@@ -229,42 +230,16 @@ def find_alignments_by_score(scoring_matrix: List[List[Cell]], seq1: str, seq2: 
     return alignments
 
 
-def sequence_arg(value):
-    """
-    Validate the seq1 or seq2 argument
-    Function will ensure that the arguments matches a given regex that allows
-    only characters from A, C, G, T.
-
-    Args:
-        value (str): automatically passed by the ArgumentParser object
-    Returns:
-    Returns the value back to the ArgumentParser object
-    Exceptions:
-        argparse.ArgumentTypeError - if the passed argument doesn't match the regex
-    """
-    # Regex check
-    if not re.match("^[ACTGactg]+$", value):
-        raise argparse.ArgumentTypeError(
-            "must contain only amino acids from the following list: A, C, G, T"
-        )
-
-    return value
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Implementation of the Smith and Waterman algorithm for local sequence alignment by Daniele Isoni",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "seq1",
-        type=sequence_arg,
-        help="First input sequence (must contain only amino acids from the following list: A, C, G, T)",
+        "seq1", type=str, help="First input sequence",
     )
     parser.add_argument(
-        "seq2",
-        type=sequence_arg,
-        help="Second input sequence (must contain only amino acids from the following list: A, C, G, T)",
+        "seq2", type=str, help="Second input sequence",
     )
     parser.add_argument(
         "--match-score", type=float, default=3.0, help="The score for a sequence match"
