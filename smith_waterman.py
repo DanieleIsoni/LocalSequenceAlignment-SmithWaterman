@@ -77,7 +77,7 @@ def compute_scoring_matrix(
         gap_penalty (float): the penalty fot the gap
     Returns:
         the matrix containing cell content
-     """
+    """
     n = len(seq1) + 1
     m = len(seq2) + 1
 
