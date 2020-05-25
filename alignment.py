@@ -110,7 +110,15 @@ class Alignments(object):
         alignments (:obj:`list` of Alignment): This is the actual list of alignments
     """
 
-    filter_props = {"length", "max_gap", "min_gap", "n_gaps", "score"}
+    filter_props = {
+        "length",
+        "num_matches",
+        "num_mismatches",
+        "max_gap",
+        "min_gap",
+        "n_gaps",
+        "score",
+    }
     filter_operators = {"neq", "gt", "gte", "lt", "lte"}
 
     def __init__(self, alignments: List[Alignment] = []) -> None:
