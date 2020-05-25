@@ -331,6 +331,9 @@ if __name__ == "__main__":
         f.write(matrix_to_print)
     print(matrix_to_print)
 
+    # Decomment the following and comment all the rest below if you only want the best alignment
+    # print(best_alignment)
+
     alignments = find_alignments_by_score(scoring_matrix, seq1, seq2)
 
     # Change this statement to the following if you want to filter only if arguments are passed:

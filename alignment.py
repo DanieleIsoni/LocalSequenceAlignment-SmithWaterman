@@ -72,6 +72,8 @@ class Alignment:
         return f"{string1}\n{string2}{Style.RESET_ALL}"
 
     def _get_coloured_if_sorting(self, to_print: str, sort_param: str = None):
+        """Returns a coloured string if the parameter to print is the sorting parameter
+        """
         uncoloured_string = f"{to_print}: {getattr(self, to_print)}"
         if to_print != sort_param:
             return uncoloured_string
@@ -83,24 +85,18 @@ class Alignment:
 
         Args:
             to_file (bool): if True the output will not be colored.
+            sort_param (str): If specified highlights the sorting parameter
         """
 
+        printable_subsequences = self._colored_subsequences()
+
         if to_file:
-            return f"""score: {self.score}
-length: {self.length}
-{self.subseq1}
-{self.subseq2}
-num_matches: {self.num_matches}
-num_mismatches: {self.num_mismatches}
-max_gap_length: {self.max_gap_length}
-min_gap_length: {self.min_gap_length}
-n_gaps: {self.n_gaps}
-trace_back_start_indices: {self.indices}
-"""
+            sort_param = None
+            printable_subsequences = f"{self.subseq1}\n{self.subseq2}"
 
         return f"""{self._get_coloured_if_sorting('score', sort_param)}
 {self._get_coloured_if_sorting('length', sort_param)}
-{self._colored_subsequences()}
+{printable_subsequences}
 {self._get_coloured_if_sorting('num_matches', sort_param)}
 {self._get_coloured_if_sorting('num_mismatches', sort_param)}
 {self._get_coloured_if_sorting('max_gap_length', sort_param)}
@@ -248,6 +244,8 @@ class Alignments(object):
         return Alignments(filtered_alignments)
 
     def print(self, sort_param=None):
+        """prints all the alignments
+        """
         for i, alignment in enumerate(self._alignments):
             print(f"Alignments {i}:")
             print(alignment.to_string(sort_param=sort_param))
