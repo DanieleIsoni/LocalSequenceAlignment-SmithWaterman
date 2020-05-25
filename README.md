@@ -37,3 +37,7 @@ optional arguments:
                         Specify file to save the output (default: None)
   --all-alignments      Prints all alignments (default: False)
 ```
+
+Examples:
+- `py smith_waterman.py TGTTACGG GGTTGACTA`
+- `py smith_waterman.py TGTTACGG GGTTGACTA --match-score=5 --mismatch-score=-5 --gap-penalty=-3 --all-alignments -o=results.txt`
