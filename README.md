@@ -38,3 +38,7 @@ optional arguments:
   --improvement         Prints all alignments with length > 5, score > 4 and
                         gaps > 0 (default: False)
 ```
+
+Examples:
+- `py smith_waterman.py TGTTACGG GGTTGACTA`
+- `py smith_waterman.py TGTTACGG GGTTGACTA --match-score=5 --mismatch-score=-5 --gap-penalty=-3 --improvement -o=results.txt`
